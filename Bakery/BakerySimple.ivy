@@ -1,0 +1,350 @@
+#lang ivy1.7
+
+#Bakery
+
+type process
+type number
+
+relation le_process(P1:process, P2:process)
+axiom le_process(P1, P1)                                                # Reflexivity
+axiom (le_process(P1, P2) & le_process(P2, P3)) -> le_process(P1, P3)   # Transitivity
+axiom (le_process(P1, P2) & le_process(P2, P1)) -> (P1 = P2)            # Anti-symmetry
+axiom le_process(P1, P2) | le_process(P2, P1)                           # Totality
+
+relation le_number(N1:number, N2:number)
+axiom le_number(N1, N1)                                                 # Reflexivity
+axiom (le_number(N1, N2) & le_number(N2, N3)) -> le_number(N1, N3)      # Transitivity
+axiom (le_number(N1, N2) & le_number(N2, N1)) -> (N1 = N2)              # Anti-symmetry
+axiom le_number(N1, N2) | le_number(N2, N1)                             # Totality
+individual zero_number:number
+axiom forall N. le_number(zero_number, N)
+
+function num(P:process):number
+relation flag(P:process)
+relation unread(P:process, P:process)
+function max(P:process):number
+relation nxt(P1:process, P2:process)
+relation pc_p1(P:process)
+relation pc_p2(P:process)
+relation pc_p3(P:process)
+relation pc_p4(P:process)
+relation pc_p5(P:process)
+relation pc_p6(P:process)
+relation pc_cs(P:process)
+relation pc_p7(P:process)
+
+# Definitions
+relation ll(J:process, I:process) = ~le_number(num(I), num(J)) | (num(I) = num(J) & le_process(J, I))
+
+after init  {
+    num(P) := zero_number;
+    flag(P) := false;
+
+    pc_p1(P) := true;
+    pc_p2(P) := false;
+    pc_p3(P) := false;
+    pc_p4(P) := false;
+    pc_p5(P) := false;
+    pc_p6(P) := false;
+    pc_cs(P) := false;
+    pc_p7(P) := false;
+}
+
+action p1_or1(self:process) = {
+    require pc_p1(self);
+    require ~pc_p2(self);
+    require ~pc_p3(self);
+    require ~pc_p4(self);
+    require ~pc_p5(self);
+    require ~pc_p6(self);
+    require ~pc_cs(self);
+    require ~pc_p7(self);
+
+    unread(self, P) := false if P = self else true;
+    max(self) := zero_number;
+    flag(self) := ~flag(self);
+}
+
+action p1_or2(self:process) = {
+    require pc_p1(self);
+    require ~pc_p2(self);
+    require ~pc_p3(self);
+    require ~pc_p4(self);
+    require ~pc_p5(self);
+    require ~pc_p6(self);
+    require ~pc_cs(self);
+    require ~pc_p7(self);
+
+    unread(self, P) := false if P = self else true;
+    max(self) := zero_number;
+    flag(self) := true;
+    pc_p1(self) := false;
+    pc_p2(self) := true;
+    pc_p3(self) := false;
+    pc_p4(self) := false;
+    pc_p5(self) := false;
+    pc_p6(self) := false;
+    pc_cs(self) := false;
+    pc_p7(self) := false;
+}
+
+action p2_then(self:process, i:process) = {
+    require ~pc_p1(self);
+    require pc_p2(self);
+    require ~pc_p3(self);
+    require ~pc_p4(self);
+    require ~pc_p5(self);
+    require ~pc_p6(self);
+    require ~pc_cs(self);
+    require ~pc_p7(self);
+    require unread(self, i);
+
+    unread(self, i) := false;
+    max(self) := num(i) if ~le_number(num(i), max(self)) else max(self);
+}
+
+action p2_else(self:process) = {
+    require ~pc_p1(self);
+    require pc_p2(self);
+    require ~pc_p3(self);
+    require ~pc_p4(self);
+    require ~pc_p5(self);
+    require ~pc_p6(self);
+    require ~pc_cs(self);
+    require ~pc_p7(self);
+    require forall P. ~unread(self, P);
+
+    pc_p1(self) := false;
+    pc_p2(self) := false;
+    pc_p3(self) := true;
+    pc_p4(self) := false;
+    pc_p5(self) := false;
+    pc_p6(self) := false;
+    pc_cs(self) := false;
+    pc_p7(self) := false;
+}
+
+action p3_then(self:process, repeat:bool, k:number) = {
+    require ~pc_p1(self);
+    require ~pc_p2(self);
+    require pc_p3(self);
+    require ~pc_p4(self);
+    require ~pc_p5(self);
+    require ~pc_p6(self);
+    require ~pc_cs(self);
+    require ~pc_p7(self);
+    require repeat;
+
+    num(self) := k;
+}
+
+action p3_else(self:process, repeat:bool, newnum:number) = {
+    require ~pc_p1(self);
+    require ~pc_p2(self);
+    require pc_p3(self);
+    require ~pc_p4(self);
+    require ~pc_p5(self);
+    require ~pc_p6(self);
+    require ~pc_cs(self);
+    require ~pc_p7(self);
+    require ~repeat;
+    require ~le_number(newnum, max(self));
+
+    num(self) := newnum;
+    pc_p1(self) := false;
+    pc_p2(self) := false;
+    pc_p3(self) := false;
+    pc_p4(self) := true;
+    pc_p5(self) := false;
+    pc_p6(self) := false;
+    pc_cs(self) := false;
+    pc_p7(self) := false;
+}
+
+action p4_or1(self:process) = {
+    require ~pc_p1(self);
+    require ~pc_p2(self);
+    require ~pc_p3(self);
+    require pc_p4(self);
+    require ~pc_p5(self);
+    require ~pc_p6(self);
+    require ~pc_cs(self);
+    require ~pc_p7(self);
+
+    unread(self, P) := false if P = self else true;
+    flag(self) := ~flag(self);
+}
+
+action p4_or2(self:process) = {
+    require ~pc_p1(self);
+    require ~pc_p2(self);
+    require ~pc_p3(self);
+    require pc_p4(self);
+    require ~pc_p5(self);
+    require ~pc_p6(self);
+    require ~pc_cs(self);
+    require ~pc_p7(self);
+
+    unread(self, P) := false if P = self else true;
+    flag(self) := false;
+    pc_p1(self) := false;
+    pc_p2(self) := false;
+    pc_p3(self) := false;
+    pc_p4(self) := false;
+    pc_p5(self) := true;
+    pc_p6(self) := false;
+    pc_cs(self) := false;
+    pc_p7(self) := false;
+}
+
+action p5_then(self:process, i:process) = {
+    require ~pc_p1(self);
+    require ~pc_p2(self);
+    require ~pc_p3(self);
+    require ~pc_p4(self);
+    require pc_p5(self);
+    require ~pc_p6(self);
+    require ~pc_cs(self);
+    require ~pc_p7(self);
+    require unread(self, i);
+    require ~flag(i);
+
+    nxt(self, P) := true if P = i else false;
+    pc_p1(self) := false;
+    pc_p2(self) := false;
+    pc_p3(self) := false;
+    pc_p4(self) := false;
+    pc_p5(self) := false;
+    pc_p6(self) := true;
+    pc_cs(self) := false;
+    pc_p7(self) := false;
+}
+
+action p5_else(self:process) = {
+    require ~pc_p1(self);
+    require ~pc_p2(self);
+    require ~pc_p3(self);
+    require ~pc_p4(self);
+    require pc_p5(self);
+    require ~pc_p6(self);
+    require ~pc_cs(self);
+    require ~pc_p7(self);
+    require forall P. ~unread(self, P);
+
+    pc_p1(self) := false;
+    pc_p2(self) := false;
+    pc_p3(self) := false;
+    pc_p4(self) := false;
+    pc_p5(self) := false;
+    pc_p6(self) := false;
+    pc_cs(self) := true;
+    pc_p7(self) := false;
+}
+
+action p6(self:process, i:process) = {
+    require ~pc_p1(self);
+    require ~pc_p2(self);
+    require ~pc_p3(self);
+    require ~pc_p4(self);
+    require ~pc_p5(self);
+    require pc_p6(self);
+    require ~pc_cs(self);
+    require ~pc_p7(self);
+    require nxt(self, i);
+    require (num(i) = zero_number) | ll(self, i);
+#    require (num(i) = zero_number) | (~le_number(num(self), num(i)) | (num(self) = num(i) & le_process(i, self)));
+
+    unread(self, i) := false;
+    pc_p1(self) := false;
+    pc_p2(self) := false;
+    pc_p3(self) := false;
+    pc_p4(self) := false;
+    pc_p5(self) := true;
+    pc_p6(self) := false;
+    pc_cs(self) := false;
+    pc_p7(self) := false;
+}
+
+action cs(self:process) = {
+    require ~pc_p1(self);
+    require ~pc_p2(self);
+    require ~pc_p3(self);
+    require ~pc_p4(self);
+    require ~pc_p5(self);
+    require ~pc_p6(self);
+    require pc_cs(self);
+    require ~pc_p7(self);
+
+    pc_p1(self) := false;
+    pc_p2(self) := false;
+    pc_p3(self) := false;
+    pc_p4(self) := false;
+    pc_p5(self) := false;
+    pc_p6(self) := false;
+    pc_cs(self) := false;
+    pc_p7(self) := true;
+}
+
+action p7_or1(self:process, repeat:bool, k:number) = {
+    require ~pc_p1(self);
+    require ~pc_p2(self);
+    require ~pc_p3(self);
+    require ~pc_p4(self);
+    require ~pc_p5(self);
+    require ~pc_p6(self);
+    require ~pc_cs(self);
+    require pc_p7(self);
+    require repeat;
+
+    num(self) := k;
+}
+
+action p7_or2(self:process, repeat:bool) = {
+    require ~pc_p1(self);
+    require ~pc_p2(self);
+    require ~pc_p3(self);
+    require ~pc_p4(self);
+    require ~pc_p5(self);
+    require ~pc_p6(self);
+    require ~pc_cs(self);
+    require pc_p7(self);
+    require ~repeat;
+
+    num(self) := zero_number;
+    pc_p1(self) := true;
+    pc_p2(self) := false;
+    pc_p3(self) := false;
+    pc_p4(self) := false;
+    pc_p5(self) := false;
+    pc_p6(self) := false;
+    pc_cs(self) := false;
+    pc_p7(self) := false;
+}
+
+
+export p1_or1
+export p1_or2
+export p2_then
+export p2_else
+export p3_then
+export p3_else
+export p4_or1
+export p4_or2
+export p5_then
+export p5_else
+export p6
+export cs
+export p7_or1
+export p7_or2
+
+invariant [mutualexclusion] forall Pi, Pj. (Pi ~= Pj) -> ~(pc_cs(Pi) & pc_cs(Pj))
+
+invariant [pc_onehot1] ( pc_p1(P) | pc_p2(P) | pc_p3(P) | pc_p4(P) | pc_p5(P) | pc_p6(P) | pc_cs(P) | pc_p7(P) )
+invariant [pc_onehot2]  pc_p1(P) -> (             ~pc_p2(P) & ~pc_p3(P) & ~pc_p4(P) & ~pc_p5(P) & ~pc_p6(P) & ~pc_cs(P) & ~pc_p7(P) )
+invariant [pc_onehot3]  pc_p2(P) -> ( ~pc_p1(P) &             ~pc_p3(P) & ~pc_p4(P) & ~pc_p5(P) & ~pc_p6(P) & ~pc_cs(P) & ~pc_p7(P) )
+invariant [pc_onehot4]  pc_p3(P) -> ( ~pc_p1(P) & ~pc_p2(P) &             ~pc_p4(P) & ~pc_p5(P) & ~pc_p6(P) & ~pc_cs(P) & ~pc_p7(P) )
+invariant [pc_onehot5]  pc_p4(P) -> ( ~pc_p1(P) & ~pc_p2(P) & ~pc_p3(P) &             ~pc_p5(P) & ~pc_p6(P) & ~pc_cs(P) & ~pc_p7(P) )
+invariant [pc_onehot6]  pc_p5(P) -> ( ~pc_p1(P) & ~pc_p2(P) & ~pc_p3(P) & ~pc_p4(P) &             ~pc_p6(P) & ~pc_cs(P) & ~pc_p7(P) )
+invariant [pc_onehot7]  pc_p6(P) -> ( ~pc_p1(P) & ~pc_p2(P) & ~pc_p3(P) & ~pc_p4(P) & ~pc_p5(P) &             ~pc_cs(P) & ~pc_p7(P) )
+invariant [pc_onehot8]  pc_cs(P) -> ( ~pc_p1(P) & ~pc_p2(P) & ~pc_p3(P) & ~pc_p4(P) & ~pc_p5(P) & ~pc_p6(P) &             ~pc_p7(P) )
+invariant [pc_onehot9]  pc_p7(P) -> ( ~pc_p1(P) & ~pc_p2(P) & ~pc_p3(P) & ~pc_p4(P) & ~pc_p5(P) & ~pc_p6(P) & ~pc_cs(P)             )
